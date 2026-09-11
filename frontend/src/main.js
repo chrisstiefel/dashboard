@@ -15,6 +15,12 @@ import App from './App.vue'
 
 // Plugins
 
+// protect against Prototype Pollution vulnerabilities
+for (const ctor of [Object, Function, Array, String, Number, Boolean]) {
+  Object.freeze(ctor)
+  Object.freeze(ctor.prototype)
+}
+
 const app = createApp(App)
 
 registerPlugins(app)
