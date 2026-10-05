@@ -19,7 +19,8 @@ SPDX-License-Identifier: Apache-2.0
           :url="htmlUrl"
           class="inherit-color text-toolbar-title"
         >
-          <span class="font-weight-bold text-toolbar-title">{{ login }}</span> commented
+          <span class="font-weight-bold text-toolbar-title">{{ login }}</span>
+          {{ initial ? 'opened' : 'commented' }}
           <g-time-string
             :date-time="createdAt"
             mode="past"
@@ -36,6 +37,10 @@ SPDX-License-Identifier: Apache-2.0
       <!-- eslint-enable vue/no-v-html -->
     </div>
   </div>
+  <div
+    v-if="timeline"
+    class="timeline"
+  />
 </template>
 
 <script>
@@ -64,9 +69,18 @@ export default {
       type: Object,
       required: true,
     },
+    timeline: {
+      type: Boolean,
+      required: false,
+    },
+    initial: {
+      type: Boolean,
+      required: false,
+    },
   },
   setup (props) {
     const { comment } = toRefs(props)
+
     const theme = useTheme()
 
     const commentHtml = computed(() => {
@@ -128,6 +142,8 @@ export default {
 
     padding: 4px 8px;
     margin-bottom: 0;
+
+    font-size: 14px;
   }
 
   .g-theme-dark {
@@ -160,7 +176,7 @@ export default {
 
   .comment-body {
     border: 0.5px solid;
-
+    font-size: 14px;
     padding: 4px 8px;
 
     /* not needed for chrome, but kept for firefox */
@@ -237,5 +253,14 @@ export default {
 
   a:hover{
     text-decoration: underline;
+  }
+
+  .timeline {
+    height: 20px;
+    border-left: solid 2px #bbb;
+    margin-left: 85px;
+    overflow: hidden;
+    margin-top: -20px;
+    margin-bottom: -10px;
   }
 </style>
