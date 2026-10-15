@@ -228,7 +228,7 @@ export default {
       volumeTypes,
     } = useShootContext()
 
-    const { machineImages, useDefaultMachineImage } = useMachineImages(cloudProfile)
+    const { machineImages, useDefaultMachineImage, useFilteredMachineImages } = useMachineImages(cloudProfile)
     const machineCapabilities = useMachineCapabilities(cloudProfile)
     const { useZones } = useRegions(cloudProfile)
     const { useFilteredMachineTypes } = useMachineTypes(cloudProfile, useZones)
@@ -258,12 +258,11 @@ export default {
 
     const defaultMachineType = computed(() => head(machineTypes.value))
 
-    const defaultMachineTypeArchitecture = computed(() => get(defaultMachineType.value, ['architecture']))
-
-    const defaultMachineImage = useDefaultMachineImage(defaultMachineTypeArchitecture)
+    const defaultMachineImage = useDefaultMachineImage(defaultMachineType)
 
     const selectedMachineType = computed(() => find(machineTypes.value, ['name', props.worker.machine.type]))
     const selectedVolumeType = computed(() => find(allVolumeTypes.value, ['name', props.worker.volume?.type]))
+    const selectedDefaultMachineImage = useDefaultMachineImage(selectedMachineType)
 
     const minimumVolumeSize = useMinimumVolumeSize(
       selectedMachineType,
@@ -286,10 +285,12 @@ export default {
       volumeTypes,
       providerWorkers,
       machineImages,
+      useFilteredMachineImages,
       machineCapabilities,
       machineArchitecture,
       machineTypes,
       selectedMachineType,
+      selectedDefaultMachineImage,
       selectedVolumeType,
       minimumVolumeSize,
       useFilteredMachineTypes,
@@ -375,10 +376,7 @@ export default {
       return !isEmpty(this.volumeTypes)
     },
     filteredMachineImages () {
-      return this.machineImages.filter(machineImage => {
-        return machineImage && !machineImage.isExpired &&
-        this.matchesMachineTypeCapabilities(machineImage)
-      })
+      return this.useFilteredMachineImages(this.selectedMachineType)
     },
     minVolumeSizeGi () {
       const minimumVolumeSizeInGi = convertToGi(this.minimumVolumeSize)
@@ -487,6 +485,10 @@ export default {
       },
       set (value) {
         this.worker.machine.type = value
+        const defaultImage = this.selectedDefaultMachineImage
+        this.worker.machine.image = defaultImage
+          ? pick(defaultImage, ['name', 'version'])
+          : {}
         this.onInputVolumeSize()
       },
     },
@@ -511,18 +513,6 @@ export default {
     },
   },
   methods: {
-    matchesMachineTypeCapabilities (machineImage) {
-      const capabilities = this.selectedMachineType?.capabilities
-      return !machineImage.capabilityFlavors || machineImage.capabilityFlavors.some(capabilityFlavor => {
-        return Object.entries(capabilityFlavor).every(([name, values]) => {
-          return values?.some(value => {
-            const capability = get(capabilities, [name])
-            return capability?.includes(value) ||
-            (!capability && get(this.machineCapabilities, [name])?.includes(value)) // Fallback to default Machine capabilities if MachineType capabilities do not exist
-          })
-        })
-      })
-    },
     onInputVolumeSize () {
       if (this.hasVolumeSize) {
         set(this.worker, ['volume', 'size'], this.volumeSize)
